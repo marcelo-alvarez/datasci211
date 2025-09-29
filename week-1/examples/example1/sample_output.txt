@@ -1,0 +1,6 @@
+Job 95161 on Fri Sep 26 04:02:31 PM PDT 2025
+Node list: n23
+SLURM_NTASKS=2  SLURM_CPUS_PER_TASK=1
+CPU model: Intel(R) Xeon(R) Platinum 8480CL
+0: [task 0] pi≈3.142840 from 200000 samples on host=n23
+1: [task 1] pi≈3.145040 from 200000 samples on host=n23

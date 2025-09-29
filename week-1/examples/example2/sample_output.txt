@@ -1,0 +1,36 @@
+Job 95173 on Fri Sep 26 04:49:39 PM PDT 2025
+Node list: n11
+SLURM_NTASKS=2  SLURM_CPUS_PER_TASK=1
+Requested GPU(s): 1
+CPU model: Intel(R) Xeon(R) Platinum 8480C
+Fri Sep 26 16:49:39 2025       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 570.133.20             Driver Version: 570.133.20     CUDA Version: 12.8     |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA H100 80GB HBM3          Off |   00000000:1B:00.0 Off |                    0 |
+| N/A   33C    P0             69W /  700W |       0MiB /  81559MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+                                                                                         
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+Compiling hello_gpu.cu ...
+Using GPU 0: NVIDIA H100 80GB HBM3 | CC 9.0 | SMs=132 | globalMem=79.2 GiB
+Vector length N=4194304 (16.00 MiB per vector)
+Checksum=12582912 (expected 12582912)
+Kernel time=0.241 ms, approx bandwidth=208.52 GB/s
+Hello GPU (CUDA) completed.
+Using GPU 0: NVIDIA H100 80GB HBM3 | CC 9.0 | SMs=132 | globalMem=79.2 GiB
+Vector length N=4194304 (16.00 MiB per vector)
+Checksum=12582912 (expected 12582912)
+Kernel time=0.235 ms, approx bandwidth=214.49 GB/s
+Hello GPU (CUDA) completed.

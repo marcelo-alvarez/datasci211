@@ -1,0 +1,128 @@
+"""Generate roofline plot from AI sweep CSV files."""
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import sys
+
+# H100 specifications
+PEAK_FP32_GFLOPS = 67000  # 67 TFLOPS
+PEAK_BW_GB_S = 3400       # 3.35 TB/s HBM3
+
+# Read CSV files
+try:
+    cuda_df = pd.read_csv("roofline_cuda.csv")
+    print("CUDA results loaded")
+except FileNotFoundError:
+    print("Warning: roofline_cuda.csv not found")
+    cuda_df = None
+
+try:
+    cupy_df = pd.read_csv("roofline_cupy.csv")
+    print("CuPy results loaded")
+except FileNotFoundError:
+    print("Warning: roofline_cupy.csv not found")
+    cupy_df = None
+
+if cuda_df is None and cupy_df is None:
+    print("Error: No CSV files found")
+    sys.exit(1)
+
+# Print summary
+print("\n" + "="*80)
+print("H100 AI Sweep Results")
+print("="*80)
+print(f"Peak FP32: {PEAK_FP32_GFLOPS/1000:.0f} TFLOPS | Peak BW: {PEAK_BW_GB_S/1000:.1f} TB/s")
+
+if cuda_df is not None:
+    peak_cuda = cuda_df['gflops'].max()
+    print(f"\nCUDA Peak: {peak_cuda/1000:.1f} TFLOPS ({100*peak_cuda/PEAK_FP32_GFLOPS:.1f}% of theoretical)")
+    print("\nCUDA Results:")
+    print(cuda_df.to_string(index=False))
+
+if cupy_df is not None:
+    peak_cupy = cupy_df['gflops'].max()
+    print(f"\nCuPy Peak: {peak_cupy/1000:.1f} TFLOPS ({100*peak_cupy/PEAK_FP32_GFLOPS:.1f}% of theoretical)")
+    print("\nCuPy Results:")
+    print(cupy_df.to_string(index=False))
+
+# Create roofline plot
+fig, ax = plt.subplots(figsize=(12, 8))
+
+# Define AI range
+ai_range = np.logspace(-1, 3, 1000)
+memory_bound = PEAK_BW_GB_S * ai_range
+compute_bound = np.full_like(ai_range, PEAK_FP32_GFLOPS)
+roofline = np.minimum(memory_bound, compute_bound)
+
+# Plot roofline
+ax.loglog(ai_range, roofline, 'k-', linewidth=2.5, label='H100 Theoretical Peak', zorder=5)
+
+# Ridge point and regions
+ridge_point_ai = PEAK_FP32_GFLOPS / PEAK_BW_GB_S
+ax.axvspan(0.1, ridge_point_ai, alpha=0.15, color='blue', label='Memory-Bound Region')
+ax.axvspan(ridge_point_ai, 1000, alpha=0.15, color='red', label='Compute-Bound Region')
+
+# Plot measured data
+if cuda_df is not None:
+    ax.loglog(cuda_df['ai'], cuda_df['gflops'], 'o', markersize=10, markerfacecolor='none',
+              markeredgecolor='darkblue', markeredgewidth=2, label='CUDA Polynomial', zorder=10)
+
+if cupy_df is not None:
+    ax.loglog(cupy_df['ai'], cupy_df['gflops'], 's', markersize=10, markerfacecolor='none',
+              markeredgecolor='darkorange', markeredgewidth=2, label='CuPy Polynomial', zorder=10)
+
+# Annotations for roofline segments
+# Memory-bound region label (moved left)
+ax.text(0.33, 3200, 'Memory-Bound:\nPerf = BW × AI\n= 3.4 TB/s × AI',
+        fontsize=9, style='italic', color='blue', alpha=0.7,
+        bbox=dict(boxstyle='round', facecolor='white', alpha=0.7, edgecolor='blue', linewidth=1))
+
+# Compute-bound region label (moved down)
+ax.text(100, 78000, 'Compute-Bound:\nPerf = 67 TFLOPS',
+        fontsize=9, style='italic', color='red', alpha=0.7,
+        bbox=dict(boxstyle='round', facecolor='white', alpha=0.7, edgecolor='red', linewidth=1))
+
+# Ridge point
+ax.axvline(ridge_point_ai, color='gray', linestyle='--', linewidth=1, alpha=0.5, zorder=1)
+ax.text(8, 78000,
+        f'Ridge Point \n AI = Peak / BW',
+        fontsize=9, bbox=dict(boxstyle='round',
+        facecolor='white', alpha=0.8, edgecolor='gray'))
+
+# Add K labels for key points
+if cuda_df is not None:
+    for _, row in cuda_df.iterrows():
+        if row['k'] in [1, 50, 1000]:
+            ax.annotate(f"K={int(row['k'])}", (row['ai'], row['gflops']),
+                       textcoords="offset points", xytext=(8, 8), ha='left',
+                       fontsize=9, alpha=0.7)
+
+# Add specifications text box
+spec_text = f"H100 Specifications:\nPeak FP32: {PEAK_FP32_GFLOPS/1000:.0f} TFLOPS\nPeak BW: {PEAK_BW_GB_S/1000:.1f} TB/s\n\nAchieved Peak:"
+if cuda_df is not None:
+    peak_cuda = cuda_df['gflops'].max()
+    spec_text += f"\nCUDA: {peak_cuda/1000:.1f} TFLOPS ({100*peak_cuda/PEAK_FP32_GFLOPS:.1f}%)"
+if cupy_df is not None:
+    peak_cupy = cupy_df['gflops'].max()
+    spec_text += f"\nCuPy: {peak_cupy/1000:.1f} TFLOPS ({100*peak_cupy/PEAK_FP32_GFLOPS:.1f}%)"
+
+ax.text(0.02, 0.98, spec_text, transform=ax.transAxes, fontsize=10,
+        verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+
+# Formatting
+ax.set_xlabel('Arithmetic Intensity (FLOPs/Byte)', fontsize=14, fontweight='bold')
+ax.set_ylabel('Performance (GFLOPS)', fontsize=14, fontweight='bold')
+#ax.set_title('Roofline Model: H100 FP32 Performance\nCUDA vs CuPy Polynomial Kernel',
+#             fontsize=16, fontweight='bold', pad=20)
+ax.grid(True, which='both', linestyle=':', alpha=0.3)
+ax.legend(loc='lower right', fontsize=11, framealpha=0.95)
+ax.set_xlim(0.1, 1000)
+ax.set_ylim(100, 130000)
+
+# Save
+plt.tight_layout()
+plt.savefig('roofline_h100.png', dpi=150, bbox_inches='tight')
+print("\n✓ Roofline plot saved to: roofline_h100.png")
