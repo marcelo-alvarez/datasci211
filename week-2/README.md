@@ -6,7 +6,7 @@ Use this README to validate your GPU workflow on Marlowe and work through the tw
 
 ## 1. Prerequisites
 - SUNet ID with access to Marlowe Slurm account `marlowe-c001`.
-- Terminal with SSH Open OnDemand Code Server tool.
+- Terminal with SSH or Open OnDemand with Code Server tool.
 - GitHub account for cloning this repository.
 
 ## 2. Clone and enter the week 2 kit
