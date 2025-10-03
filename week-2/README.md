@@ -1,12 +1,12 @@
 # DataSci 211 — Week 2 Student Guide
 
-Use this README to get ready for Lecture 2 and validate your GPU workflow on Marlowe.
+Use this README to validate your GPU workflow on Marlowe and work through the two examples provided.
 
 ---
 
 ## 1. Prerequisites
-- SUNet ID with access to Slurm account `marlowe-c001`.
-- Terminal with SSH (macOS/Linux shell; Windows via WSL or VS Code Remote SSH).
+- SUNet ID with access to Marlowe Slurm account `marlowe-c001`.
+- Terminal with SSH Open OnDemand Code Server tool.
 - GitHub account for cloning this repository.
 
 ## 2. Clone and enter the week 2 kit
@@ -52,7 +52,44 @@ micromamba activate ds211-python
 Once `salloc` grants the allocation you are already running on the compute node; use `hostname` to confirm.
 
 ## 5. Run roofline analysis
-The roofline model demonstrates GPU performance characteristics by varying arithmetic intensity (FLOPs per byte).
+
+### Overview
+The roofline model is a visual performance characterization that plots achieved performance (GFLOPS) vs arithmetic intensity (FLOPs/byte). This analysis demonstrates GPU performance characteristics by varying arithmetic intensity.
+
+**1. ROOFLINE MODEL:**
+- Performance is limited by the minimum of:
+  - Memory bandwidth ceiling: Performance = Bandwidth × AI
+  - Compute throughput ceiling: Performance = Peak FLOPS
+
+**2. ARITHMETIC INTENSITY (AI):**
+- AI = FLOPs / Bytes accessed from memory
+- Low AI (<ridge point): Memory-bound, limited by bandwidth
+- High AI (>ridge point): Compute-bound, limited by FLOPS
+
+**3. RIDGE POINT:**
+- AI_ridge = Peak FLOPS / Peak Bandwidth
+- For H100: ~67 TFLOPS / 3.4 TB/s ≈ 19.7 FLOPs/byte
+- This is where the workload transitions from memory- to compute-bound
+
+**4. CUPY RAWMODULE:**
+- CuPy's RawModule allows loading CUDA C/C++ kernels directly into Python
+- Enables using optimized CUDA kernels from Python
+- Allows fair comparison between CUDA and CuPy (same kernel)
+
+### Implementation
+
+**Polynomial Kernel (`roofline_kernel.cuh`):**
+- Computes: `b[i] = a[i] + a[i]^2 + ... + a[i]^k`
+- FLOPs: K additions + K multiplications = 2K FLOPs per element
+- Memory: 1 read (4 bytes) + 1 write (4 bytes) = 8 bytes per element
+- Arithmetic intensity: AI = 2K / 8 = K/4 FLOPs/byte
+- By varying K from 1 to 1000, we sweep from memory-bound to compute-bound
+
+**Performance Regions:**
+- Small K (low AI): Memory-bound, limited by bandwidth (~3.4 TB/s on H100)
+- Large K (high AI): Compute-bound, limited by FP32 throughput (~67 TFLOPS on H100)
+
+### Running
 
 `run_roofline.sh` runs both CUDA and CuPy arithmetic intensity sweeps via `srun`, then generates a roofline plot locally (no GPU allocation needed for plotting):
 ```bash
@@ -69,7 +106,66 @@ This will:
 The plot shows memory-bound vs compute-bound regions and demonstrates that CUDA and CuPy achieve identical performance.
 
 ## 6. Run Amdahl's Law multi-GPU scaling
-Amdahl's Law shows how serial bottlenecks limit parallel speedup. This example uses multi-GPU matrix multiplication.
+
+### Overview
+Amdahl's Law predicts the theoretical speedup achievable when parallelizing a workload. It shows how even small serial fractions can severely limit parallel scalability.
+
+**1. AMDAHL'S LAW:**
+```
+Speedup = 1 / [(1-p) + p/N]
+```
+where:
+- `p` = parallel fraction (0 to 1)
+- `N` = number of processors (GPUs)
+- `(1-p)` = serial fraction
+
+The serial fraction limits maximum speedup
+- Example: 10% serial (p=0.9) → max speedup = 10×, even with infinite GPUs
+
+**2. MULTI-GPU SCALING:**
+Any workload has serial components, e.g.:
+- Data generation/loading 
+- Model synchronization
+- I/O operations (logging, checkpointing)
+
+This example uses matrix multiplication partitioned across GPUs with (mock) serial data generation to show the scaling behavior.
+
+**3. PARALLEL EFFICIENCY:**
+```
+Efficiency = Speedup / N
+```
+- Perfect: 100% (linear scaling)
+- Good: >80%
+- Limited: <50%
+
+### Implementation Details
+
+**Multi-GPU Matrix Multiply (`amdahl.py`):**
+
+**Workload breakdown:**
+1. **Serial phase (GPU 0 only):**
+   - Data generation: Create random input data
+   - Does NOT benefit from multiple GPUs
+   - Simulates real-world serial bottlenecks
+
+2. **Parallel phase (all GPUs):**
+   - Partition matrix A row-wise across GPUs
+   - Replicate matrix B on all GPUs
+   - Each GPU computes its slice: C_i = A_i @ B independently
+   - Speedup scales with number of GPUs (ideally)
+
+**Parallelization strategy:**
+- Matrix multiply: C[M×N] = A[M×K] @ B[K×N]
+- Split A into horizontal slices (GPU i gets rows `[i*M/N : (i+1)*M/N]`)
+- Replicate B on all GPUs (all slices need full B)
+- Each GPU computes independent slice (no inter-GPU communication needed)
+
+**Why this demonstrates Amdahl's Law:**
+- Serial phase: Fixed cost regardless of GPU count
+- Parallel phase: Scales linearly with GPU count
+- Measured speedup should match Amdahl's Law with fitted p
+
+### Running the Analysis
 
 `run_amdahl.sh` generates theoretical Amdahl curves and optionally measures actual multi-GPU performance:
 ```bash
@@ -90,12 +186,4 @@ With `--measure`, this will:
 - Generate CSV files: `amdahl_speedup.csv`, `amdahl_measured.csv`, `amdahl_fitted_p.txt`
 - Create plot: `amdahl_plot.png`
 
-The code demonstrates realistic parallel scaling with serial data generation overhead (~10%) limiting maximum speedup to ~10× despite using 8 GPUs.
-
-## 7. Troubleshooting tips
-- `micromamba: command not found` → ensure `/scratch/c001/sw/micromamba` exists and you've set `MAMBA_ROOT_PREFIX` correctly.
-- `python` resolves to `/usr/bin/python` → run the Micromamba shell hook before `micromamba activate`.
-- `ImportError: cupy` → the shared environment should have CuPy pre-installed. Check `micromamba list` after activating.
-- `Invalid qos specification` → confirm `--partition=class --qos=class` and that you have no other class QoS job active.
-
-Successfully running both starter examples and the CuPy demo means you are ready for Lecture 2.
+The code demonstrates example parallel scaling with serial data generation overhead (~10%) limiting speedup to ~4x even on 8 GPUs.
