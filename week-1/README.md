@@ -1,6 +1,6 @@
 # DataSci 211 — Week 1 Cluster Warm-Up
 
-Use these examples to practice basic Slurm submissions on Marlowe before moving on to the GPU-focused week 2 materials.
+Use these examples to practice basic Slurm submissions on Marlowe before moving on to the week 2 materials.
 
 ---
 
