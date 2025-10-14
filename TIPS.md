@@ -2,6 +2,14 @@
 
 Development tips for GPU computing coursework on Marlowe.
 
+## Monitoring a Funning Slurm Job with srun
+
+You can log on to any node running your Slurm job to monitor it, e.g.:
+```bash
+srun --jobid=SLURM_JOB_ID --pty bash
+```
+Once on the node it should be the same environment as in your batch script.
+
 ## Using VSCode/Cursor with Marlowe via SSHFS
 
 Marlowe blocks VSCode Remote-SSH server installations on login nodes. Use SSHFS to mount your remote directory locally and work with your IDE locally while maintaining terminal access to Marlowe.
