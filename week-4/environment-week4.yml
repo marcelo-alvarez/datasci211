@@ -1,0 +1,25 @@
+# Micromamba/Conda environment specification for DataSci 211 Week 4
+#
+# This environment contains PyTorch with GPU/CUDA support for neural network
+# training examples on Marlowe H100 GPUs.
+# Separate from the ds211-python environment (weeks 1-2) which focuses on CuPy.
+#
+# Install using:
+#   bash setup_week4_env.sh
+#
+# Or manually:
+#   micromamba env create -f environment-week4.yml
+#
+name: ds211-week4
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pytorch::pytorch=2.3.*
+  - pytorch::pytorch-cuda=12.1
+  - numpy
+  - matplotlib
+  - pytest
+  - pip
