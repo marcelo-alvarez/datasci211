@@ -2,7 +2,7 @@
 
 Development tips for GPU computing coursework on Marlowe.
 
-## Monitoring a Funning Slurm Job with srun
+## Monitoring a Running Slurm Job with srun
 
 You can log on to any node running your Slurm job to monitor it, e.g.:
 ```bash
