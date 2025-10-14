@@ -8,3 +8,5 @@ Cluster warm-up examples for CPU and GPU Slurm jobs. Includes [`hello_cpu.sh`](w
 ### [Week 2](week-2)
 GPU performance analysis using roofline model and Amdahl's Law. Includes [`run_roofline.sh`](week-2/run_roofline.sh) and [`run_amdahl.sh`](week-2/run_amdahl.sh). See [`week-2/README.md`](week-2/README.md) for setup and usage.
 
+### [Week 4](week-4)
+SLURM training workflows covering single-GPU jobs, checkpoint/resume flows, and two-GPU DDP launches. Includes `single_gpu_train.sh`, `checkpoint_train.sh`, `ddp_train.sh`, shared utilities under `week-4/common/`, and the Micromamba environment spec (`environment-week4.yml`). See [`week-4/README.md`](week-4/README.md) for activation steps and commands.
