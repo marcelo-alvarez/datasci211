@@ -10,3 +10,9 @@ GPU performance analysis using roofline model and Amdahl's Law. Includes [`run_r
 
 ### [Week 4](week-4)
 SLURM training workflows covering single-GPU jobs, checkpoint/resume flows, and two-GPU DDP launches. Includes `single_gpu_train.sh`, `checkpoint_train.sh`, `ddp_train.sh`, shared utilities under `week-4/common/`, and the Micromamba environment spec (`environment-week4.yml`). See [`week-4/README.md`](week-4/README.md) for activation steps and commands.
+
+### [Week 5](week-5)
+Single-node PyTorch DDP strong-scaling exercise using synthetic data. See [`week-5/README.md`](week-5/README.md) for the workload description, SLURM submission scripts, and metrics aggregation workflow.
+
+### [Week 6](week-6)
+GPU profiling lecture covering when to profile, identifying bottlenecks, and using NVIDIA Nsight Systems and NVTX, and Nsight Compute. See [`week-6/DataSci211-week-6.pdf`](week-6/DataSci211-week-6.pdf).
